@@ -4,7 +4,7 @@ from tensorforce.agents import PPOAgent
 from tensorforce.execution import Runner
 from environment import OhlcvEnv
 from open_ai_gym import OpenAIGym
-from process_data import get_data
+from process_data import get_data, get_data_from_file
 
 
 def create_btc_env(window_size, data, train):
@@ -18,9 +18,9 @@ def create_network_spec():
         {
             "type": "flatten"
         },
-        dict(type='dense', size=32, activation='relu'),
-        dict(type='dense', size=32, activation='relu'),
-        dict(type='internal_lstm', size=32),
+        dict(type='dense', size=64, activation='relu'),
+        dict(type='dense', size=64, activation='relu'),
+        dict(type='internal_lstm', size=64),
     ]
     return network_spec
 
@@ -29,10 +29,10 @@ def create_baseline_spec():
     baseline_spec = [
         {
             "type": "lstm",
-            "size": 32,
+            "size": 64,
         },
-        dict(type='dense', size=32, activation='relu'),
-        dict(type='dense', size=32, activation='relu'),
+        dict(type='dense', size=64, activation='relu'),
+        dict(type='dense', size=64, activation='relu'),
     ]
     return baseline_spec
 
@@ -44,8 +44,9 @@ SAVE_DIR = os.path.join(LOAD_DIR, "ppo_agent")
 # Callback function printing episode statistics
 def episode_finished(r):
     reward = "%.6f" % (r.episode_rewards[-1])
+    episod = "%4d" % (r.episode)
     print("Finished episode {ep} after {ts} timesteps (reward: {reward})".
-          format(ep=r.episode, ts=r.episode_timestep, reward=reward))
+          format(ep=episod, ts=r.episode_timestep, reward=reward))
 
     if np.mean(r.episode_rewards[-1]) > 0:
         r.agent.save_model(SAVE_DIR, append_timestep=False)
@@ -53,15 +54,17 @@ def episode_finished(r):
 
 
 def print_simple_log(r):
-    print("Finished episode {ep} after {ts} timesteps (reward: {reward})".
+    print("Finished episode {ep:2d} after {ts} timesteps (reward: {reward})".
           format(ep=r.episode, ts=r.episode_timestep, reward=r.episode_rewards[-1]))
 
 
 def main():
 
+    ticker = 'IBM'
+    train_data, test_data = get_data(ticker=ticker)
+    # train_data, test_data = get_data_from_file(ticker=ticker)
     # window size
-    train_data, test_data = get_data()
-    time_step = 30
+    time_step = 5
     train_environment = create_btc_env(window_size=time_step, data=train_data, train=True)
     test_environment = create_btc_env(window_size=time_step, data=test_data, train=False)
 
@@ -79,10 +82,10 @@ def main():
         reward_preprocessing=None,
         # MemoryModel
         update_mode=dict(
-            unit='timesteps', #'episodes',
+            unit='timesteps',
             # 10 episodes per update
             batch_size=32,
-            # # Every 10 episodes
+            # Every 10 episodes
             frequency=10
         ),
         memory=dict(
@@ -130,7 +133,7 @@ def main():
         environment=test_environment,
     )
 
-    train_runner.run(episodes=500, max_episode_timesteps=16000, episode_finished=episode_finished)
+    train_runner.run(episodes=100, max_episode_timesteps=500000, episode_finished=episode_finished)
     print("Learning finished. Total episodes: {ep}. Average reward of last 100 episodes: {ar}.".format(
         ep=train_runner.episode,
         ar=np.mean(train_runner.episode_rewards[-100:]))

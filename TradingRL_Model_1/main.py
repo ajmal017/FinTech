@@ -6,7 +6,7 @@ import pickle
 
 from util import maybe_make_dir
 from util import get_data
-from util import get_scaler
+from util import get_scalar
 from environment import TradingEnv
 from agent import DQNAgent
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     state_size = env.observation_space.shape
     action_size = env.action_space.n
     agent = DQNAgent(state_size, action_size)
-    scaler = get_scaler(env)
+    scalar = get_scalar(env)
 
     portfolio_value = []
 
@@ -48,24 +48,27 @@ if __name__ == '__main__':
         # when test, the timestamp is same as time when weights was trained
         timestamp = re.findall(r'\d{12}', args.weights)[0]
 
+    max_portfolio = 0
     for e in range(args.episode):
         state = env.reset()
-        state = scaler.transform([state])
+        state = scalar.transform([state])
         for time in range(env.n_step):
             action = agent.act(state)
             next_state, reward, done, info = env.step(action)
-            next_state = scaler.transform([next_state])
+            next_state = scalar.transform([next_state])
             if args.mode == 'train':
                 agent.remember(state, action, reward, next_state, done)
             state = next_state
             if done:
                 print("episode: {}/{}, episode end value: {}".format(
                     e + 1, args.episode, info['cur_val']))
-                portfolio_value.append(info['cur_val']) # append episode end portfolio value
+                # append episode end portfolio value
+                portfolio_value.append((info['cur_val'], info['hist']))
+                max_portfolio = info['cur_val'] 
                 break
-        if args.mode == 'train' and len(agent.memory) > args.batch_size:
-            agent.replay(args.batch_size)
-        if args.mode == 'train' and (e + 1) % 10 == 0:  # checkpoint weights
+            if args.mode == 'train' and len(agent.memory) > args.batch_size:
+                agent.replay(args.batch_size)
+        if args.mode == 'train' and (e + 1) % 10 == 0:
             agent.save('weights/{}-dqn.h5'.format(timestamp))
 
     # save portfolio value history to disk

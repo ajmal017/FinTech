@@ -44,6 +44,9 @@ class Trader(object):
         # Init history profits and baselines.
         self.history_profits = []
         self.history_baselines = []
+        self.stock_cash = {}
+        for code in self.codes:
+            self.stock_cash[code] = self.cash
 
         # Init action dic.
         self.action_dic = {ActionCode.Buy: self.buy, ActionCode.Hold: self.hold, ActionCode.Sell: self.sell}
@@ -54,7 +57,8 @@ class Trader(object):
 
     @property
     def action_space(self):
-        return 3 * self.codes_count
+        return 3 ** self.codes_count
+        # return 3 * self.codes_count
 
     @property
     def profits(self):
@@ -84,6 +88,7 @@ class Trader(object):
                 position.add(stock.close, amount, stock_next.close)
             # Update cash and holding price.
             self.cash -= amount * stock.close
+            self.stock_cash[code] -= amount * stock.close
             self._update_reward(ActionCode.Buy, ActionStatus.Success, position)
             self.market.logger.info("Code: {0},"
                                     " buy success,"
@@ -92,7 +97,7 @@ class Trader(object):
                                                                     self.cash,
                                                                     self.holdings_value))
         else:
-            self.market.logger.info("Code: {}, not enough cash, cannot buy.".format(code))
+            self.market.logger.info("Code: {0}, not enough cash, cannot buy. cache:{1}".format(code, self.cash))
             if self._exist_position(code):
                 # If position exists, update status.
                 position = self._position(code)
@@ -110,6 +115,7 @@ class Trader(object):
         position.sub(stock.close, amount, stock_next.close)
         # Update cash and holding price.
         self.cash += amount * stock.close
+        self.stock_cash[code] += amount * stock.close
         self._update_reward(ActionCode.Sell, ActionStatus.Success, position)
         self.market.logger.info("Code: {0},"
                                 " sell success,"

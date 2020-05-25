@@ -121,27 +121,45 @@ class Market(object):
             if not self.doc_class.exist_in_db(code):
                 raise ValueError("Code: {} not exists in database.".format(code))
         """
+    
+    def add_bar_features(self, df):
+        # stationary candle
+        df['bar_hc']  = df.high  - df.close
+        df['bar_ho']  = df.high  - df.open
+        df['bar_hl']  = df.high  - df.low
+        df['bar_cl']  = df.close - df.low
+        df['bar_ol']  = df.open  - df.low
+        df['bar_co']  = df.close - df.open
+        df['bar_mov'] = df.close - df.close.shift(1)
+        df.fillna(method='bfill', inplace=True)
+        return
+
+
     def _init_data_frames(self, start_date, end_date):
         # Remove invalid codes first.
         self._validate_codes()
         # Init columns and data set.
-        columns, dates_set = ['open', 'high', 'low', 'close', 'volume'], set()
+        orig_column = ['open', 'high', 'low', 'close', 'volume']
+        scaled_column = ['bar_hc', 'bar_ho', 'bar_hl', 'bar_cl', 'bar_ol', 'bar_co', 'bar_mov']
+        dates_set = set()
         # Load data.
         for index, code in enumerate(self.state_codes):
             data = pdr.get_data_yahoo(code, start_date, end_date)
             data.columns = map(str.lower, data.columns)
             # Split dates.
             dates = data.index
+            # Add bar feature
+            self.add_bar_features(data)
             # Split instruments.
-            instruments = data[columns]
+            instruments = data[scaled_column]
             # Update dates set.
             dates_set = dates_set.union(dates)
             # Build origin and scaled frames.
             scaler = self.scalar[index]
             scaler.fit(instruments)
             instruments_scaled = scaler.transform(instruments)
-            origin_frame = pd.DataFrame(data=instruments, index=dates, columns=columns)
-            scaled_frame = pd.DataFrame(data=instruments_scaled, index=dates, columns=columns)
+            origin_frame = data[orig_column]
+            scaled_frame = pd.DataFrame(data=instruments_scaled, index=dates, columns=scaled_column)
             # Build code - frame map.
             self.origin_frames[code] = origin_frame
             self.scaled_frames[code] = scaled_frame
@@ -318,7 +336,7 @@ class Market(object):
         for stock_code_action in stock_code_actions:
             stock_code = stock_code_action[0]
             action_code = stock_code_action[1]
-            #print("-----", stock_code, action_code)
+            # print("-----", stock_code, action_code)
             stock = self._origin_data(stock_code, self.current_date)
             stock_next = self._origin_data(stock_code, self.next_date)
             # Execute transaction.

@@ -77,10 +77,11 @@ class AlgorithmPG(BaseRLTFModel):
                 self.log_loss(episode)
                 s = self.env.reset(self.mode)
                 while True:
-                    c, a, a_index = self.predict(s)
-                    #ca, a_index = self.predict(s)
-                    #print(ca)
-                    s_next, r, status, _ = self.env.forward(c, a)
+                    cas, a_index = self.predict(s)
+                    # ca, a_index = self.predict(s)
+                    # print(ca)
+                    for ca in cas:
+                        s_next, r, status, _ = self.env.forward(ca[0], ca[1])
                     self.save_transition(s, a_index, r, s_next)
                     s = s_next
                     if status == self.env.Done:
@@ -113,10 +114,10 @@ class AlgorithmPG(BaseRLTFModel):
 
     def predict(self, s):
         a = self.session.run(self.a_s_prob, {self.s: s})
-        #print("******", s)
-        #print("######", a)
-        return self.get_stock_code_and_action(a, use_greedy=False, use_prob=True)
-        #return self._get_stock_code_and_action(a)
+        # print("******", s)
+        # print("######", a)
+        return self._get_stock_code_and_action(a, use_greedy=False, use_prob=True)
+        # return self._get_stock_code_and_action(a)
 
     def save_transition(self, s, a, r, s_next):
         self.s_buffer.append(s.reshape((-1, )))

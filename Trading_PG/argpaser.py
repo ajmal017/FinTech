@@ -1,6 +1,6 @@
 import argparse
 
-stock_codes = ["AAPL", "IBM", "CSCO"]
+stock_codes = ["IBM"]
 future_codes = ["AU88", "RB88", "CU88", "AL88"]
 
 stock_spider_parser = argparse.ArgumentParser()

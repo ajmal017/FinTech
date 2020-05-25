@@ -2,7 +2,7 @@ import os
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 import datetime as dt
-import pandas_datareader.data  as pdr
+import pandas_datareader.data as pdr
 
 
 def get_data(stock_intervals=10, col='Adj Close'):
@@ -15,13 +15,13 @@ def get_data(stock_intervals=10, col='Adj Close'):
     ibm = pdr.get_data_yahoo('IBM', start_date, end_date)
     qcom = pdr.get_data_yahoo('QCOM', start_date, end_date)
 
-    # recent price are at top; reverse it
-    return np.array([msft[col].values[::-1],
-                     ibm[col].values[::-1],
-                     qcom[col].values[::-1]])
+    #return np.array([msft[col].values,
+    #                 ibm[col].values,
+    #                 qcom[col].values])
+    return np.array([msft[col].values])
 
 
-def get_scaler(env):
+def get_scalar(env):
     """
     Takes a env and returns a scaler for its observation space
     """
@@ -42,7 +42,6 @@ def get_scaler(env):
     scaler = StandardScaler()
     scaler.fit([low, high])
     return scaler
-
 
 def maybe_make_dir(directory):
     if not os.path.exists(directory):

@@ -23,17 +23,17 @@ class DQNAgent(object):
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
         act_values = self.model.predict(state)
-        return np.argmax(act_values[0])  # returns action
+        return np.argmax(act_values[0])
 
     def replay(self, batch_size=32):
         """ vectorized implementation; 30x speed up compared with for loop """
-        minibatch = random.sample(self.memory, batch_size)
+        mini_batch = random.sample(self.memory, batch_size)
 
-        states = np.array([tup[0][0] for tup in minibatch])
-        actions = np.array([tup[1] for tup in minibatch])
-        rewards = np.array([tup[2] for tup in minibatch])
-        next_states = np.array([tup[3][0] for tup in minibatch])
-        done = np.array([tup[4] for tup in minibatch])
+        states = np.array([tup[0][0] for tup in mini_batch])
+        actions = np.array([tup[1] for tup in mini_batch])
+        rewards = np.array([tup[2] for tup in mini_batch])
+        next_states = np.array([tup[3][0] for tup in mini_batch])
+        done = np.array([tup[4] for tup in mini_batch])
 
         # Q(s', a)
         target = rewards + self.gamma * np.amax(self.model.predict(next_states), axis=1)
@@ -55,4 +55,3 @@ class DQNAgent(object):
 
     def load(self, name):
         self.model.load_weights(name)
-
