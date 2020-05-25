@@ -340,7 +340,7 @@ def train_predict(ticker,
     return
 
 def main(start, end):
-    print ("Start [{0.3d}] -> End [{1:3d}]".format(start, end))
+    print ("Start [{0:3d}] -> End [{1:3d}]".format(start, end))
     data_folder = '/content/drive/My Drive/FintechData/results/'
     maybe_make_dir(data_folder)
 
