@@ -5,19 +5,15 @@ import quandl
 import warnings
 import os
 
-import pandas as pd
-import numpy as np
 import bs4 as bs
-import tensorflow as tf
 import datetime as dt
 
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, LSTM, CuDNNLSTM
+from keras.layers import Dense, CuDNNLSTM
 from ta.momentum import *
 from ta.trend import *
 from ta.volume import *
-from ta.others import *
 from ta.volatility import *
 
 
@@ -25,14 +21,16 @@ def maybe_make_dir(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def macd(close, fast=12, slow=26, signal=9):
+
+def calc_macd(close, fast=12, slow=26, signal=9):
     ma_fast = close.ewm(span=fast, min_periods=fast).mean()
     ma_slow = close.ewm(span=slow, min_periods=slow).mean()
-    macd_ = ma_fast - ma_slow
-    ma_signal = macd_.ewm(span=signal, min_periods=signal).mean()
-    return (macd_, ma_signal)
+    macd = ma_fast - ma_slow
+    ma_signal = macd.ewm(span=signal, min_periods=signal).mean()
+    return macd, ma_signal
 
-def RSI(close, interval=14):
+
+def calc_rsi(close, interval=14):
     """
     Momentum indicator
     As per https://www.investopedia.com/terms/r/rsi.asp
@@ -49,30 +47,34 @@ def RSI(close, interval=14):
     avg_gain = gain.rolling(interval).sum() / interval
     avg_loss = loss.rolling(interval).sum() / interval
     rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
+    return 100 - (100 / (1 + rs))
 
-def IBR(close, low, high):
+
+def calc_ibr(close, low, high):
     return (close - low) / (high - low)
 
-def WilliamR(close, low, high, interval=14):
+
+def calc_william_r(close, low, high, interval=14):
     """
     Momentum indicator
-    Using TA Libraray
+    Using TA Library
     %R = (Highest High - Close)/(Highest High - Lowest Low) * -100
     """
     return wr(high, low, close, interval, fillna=True)
 
-def MFI(close, low, high, vol, interval=14):
+
+def calc_mfi(close, low, high, vol, interval=14):
     """
     Momentum type indicator
     """
     return money_flow_index(high, low, close, vol, n=interval, fillna=True)
 
-def calculate_roc(series, period):
+
+def calculate_roc(series, _):
     return ((series.iloc[-1] - series.iloc[0]) / series.iloc[0]) * 100
 
-def ROC(close, interval=14):
+
+def calc_roc(close, interval=14):
     """
     Momentum oscillator
     As per implement https://www.investopedia.com/terms/p/pricerateofchange.asp
@@ -86,14 +88,16 @@ def ROC(close, interval=14):
     # for 12 day period, 13th day price - 1st day price
     return close.rolling(interval + 1).apply(calculate_roc, args=(interval,), raw=False)
 
-def CMF(close, low, high, vol, interval=21):
+
+def calc_cmf(close, low, high, vol, interval=21):
     """
     An oscillator type indicator & volume type
     No other implementation found
     """
     return chaikin_money_flow(high, low, close, vol, interval, fillna=True)
 
-def calculate_cmo(series, period):
+
+def calculate_cmo(series, _):
     # num_gains = (series >= 0).sum()
     # num_losses = (series < 0).sum()
     sum_gains = series[series >= 0].sum()
@@ -101,9 +105,10 @@ def calculate_cmo(series, period):
     cmo = 100 * ((sum_gains - sum_losses) / (sum_gains + sum_losses))
     return np.round(cmo, 3)
 
-def CMO(close, interval=20):
+
+def calc_cmo(close, interval=20):
     """
-    Chande Momentum Oscillator
+    Change Momentum Oscillator
     As per https://www.fidelity.com/learning-center/trading-investing/technical-analysis/technical-indicator-guide/cmo
     CMO = 100 * ((Sum(ups) - Sum(downs))/ ( (Sum(ups) + Sum(downs) ) )
     range = +100 to -100
@@ -115,29 +120,34 @@ def CMO(close, interval=20):
     diff = close.diff()[1:]  # skip na
     return diff.rolling(interval).apply(calculate_cmo, args=(interval,), raw=False)
 
-def SMA(close, interval=9):
+
+def calc_sma(close, interval=9):
     """
     Momentum indicator
     """
     return close.rolling(interval).mean()
 
-def EMA(close, interval=9):
+
+def calc_ema(close, interval=9):
     """
     Momentum indicator
     """
     return close.ewm(span=interval, min_periods=interval-1).mean()
 
-def wavg(rolling_prices, period):
+
+def calc_wavg(rolling_prices, period):
     weights = pd.Series(range(1, period + 1))
     return np.multiply(rolling_prices.values, weights.values).sum() / weights.sum()
 
-def WMA(close, interval=9, hma_step=0):
+
+def calc_wma(close, interval=9):
     """
     Momentum indicator
     """
-    return close.rolling(interval).apply(wavg, args=(interval,), raw=False)
+    return close.rolling(interval).apply(calc_wavg, args=(interval,), raw=False)
 
-def TRIX(close, interval=15):
+
+def calc_trix(close, interval=15):
     """
     Shows the percent rate of change of a triple exponentially smoothed moving average.
     http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:trix
@@ -148,7 +158,8 @@ def TRIX(close, interval=15):
     """
     return trix(close, interval, fillna=True)
 
-def CCI(close, low, high, interval=20):
+
+def calc_cci(close, low, high, interval=20):
     """
     Commodity Channel Index (CCI)
     CCI measures the difference between a security’s price change and its average
@@ -159,7 +170,8 @@ def CCI(close, low, high, interval=20):
     """
     return cci(high, low, close, interval, fillna=True)
 
-def DPO(close, interval=20):
+
+def calc_dpo(close, interval=20):
     """
     Detrended Price Oscillator (DPO)
     Is an indicator designed to remove trend from price and make it easier to
@@ -168,7 +180,8 @@ def DPO(close, interval=20):
     """
     return dpo(close, n=interval)
 
-def KST(close, interval=20):
+
+def calc_kst(close, interval=20):
     """
     KST Oscillator (KST Signal)
     It is useful to identify major stock market cycle junctures because its
@@ -178,7 +191,8 @@ def KST(close, interval=20):
     http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:know_sure_thing_kst  """
     return kst(close, interval)
 
-def DMI(close, low, high, interval=14):
+
+def calc_dmi(close, low, high, interval=14):
     """
     Average Directional Movement Index (ADX)
     The Plus Directional Indicator (+DI) and Minus Directional Indicator (-DI) are
@@ -194,7 +208,8 @@ def DMI(close, low, high, interval=14):
     """
     return adx(high, low, close, n=interval, fillna=True)
 
-def BB_MAV(close, interval=20):
+
+def calc_bb_mav(close, interval=20):
     """
     Bollinger Bands (BB)
     N-period simple moving average (MA).
@@ -202,7 +217,8 @@ def BB_MAV(close, interval=20):
     """
     return bollinger_mavg(close, n=interval, fillna=True)
 
-def FI(close, vol, interval=13):
+
+def calc_fi(close, vol, interval=13):
     """
     Force Index (FI)
     It illustrates how strong the actual buying or selling pressure is.
@@ -212,7 +228,8 @@ def FI(close, vol, interval=13):
     """
     return force_index(close, vol, n=interval, fillna=True)
 
-def EOM(low, high, vol, interval=14):
+
+def calc_eom(low, high, vol, interval=14):
     """
     An Oscillator type indicator and volume type
     Ease of Movement : https://www.investopedia.com/terms/e/easeofmovement.asp
@@ -222,35 +239,37 @@ def EOM(low, high, vol, interval=14):
     evm = dm / br
     return evm.rolling(interval).mean()
 
-def add_techincal_indicators(input_data):
+
+def add_technical_indicators(input_data):
 
     close = input_data['close']
     high = input_data['high']
     low = input_data['low']
     vol = input_data['volume']
 
-    input_data['macd'], input_data['signal'] = macd(close)
-    input_data['rsi'] = RSI(close=close)
-    input_data['ibr'] = IBR(close=close, low=low, high=high)
-    input_data['willamr'] = WilliamR(close=close, low=low, high=high)
-    input_data['mfi'] = MFI(close=close, low=low, high=high, vol=vol)
-    input_data['roc_12'] = ROC(close=close, interval=12)
-    input_data['roc_25'] = ROC(close=close, interval=25)
-    input_data['cmf'] = CMF(close=close, low=low, high=high, vol=vol)
-    input_data['cmo'] = CMO(close=close)
-    input_data['sma'] = SMA(close=close)
-    input_data['ema'] = EMA(close=close)
-    input_data['wma'] = WMA(close=close)
-    input_data['trix'] = TRIX(close=close)
-    input_data['cci'] = CCI(close=close, low=low, high=high)
-    input_data['dpo'] = DPO(close=close)
-    input_data['kst'] = KST(close=close)
-    input_data['dmi'] = DMI(close=close, low=low, high=high)
-    input_data['bb'] = BB_MAV(close=close)
-    input_data['fi'] = FI(close=close, vol=vol)
-    input_data['eom'] = EOM(low=low, high=high, vol=vol)
+    input_data['macd'], input_data['signal'] = calc_macd(close)
+    input_data['rsi'] = calc_rsi(close=close)
+    input_data['ibr'] = calc_ibr(close=close, low=low, high=high)
+    input_data['willamr'] = calc_william_r(close=close, low=low, high=high)
+    input_data['mfi'] = calc_mfi(close=close, low=low, high=high, vol=vol)
+    input_data['roc_12'] = calc_roc(close=close, interval=12)
+    input_data['roc_25'] = calc_roc(close=close, interval=25)
+    input_data['cmf'] = calc_cmf(close=close, low=low, high=high, vol=vol)
+    input_data['cmo'] = calc_cmo(close=close)
+    input_data['sma'] = calc_sma(close=close)
+    input_data['ema'] = calc_ema(close=close)
+    input_data['wma'] = calc_wma(close=close)
+    input_data['trix'] = calc_trix(close=close)
+    input_data['cci'] = calc_cci(close=close, low=low, high=high)
+    input_data['dpo'] = calc_dpo(close=close)
+    input_data['kst'] = calc_kst(close=close)
+    input_data['dmi'] = calc_dmi(close=close, low=low, high=high)
+    input_data['bb'] = calc_bb_mav(close=close)
+    input_data['fi'] = calc_fi(close=close, vol=vol)
+    input_data['eom'] = calc_eom(low=low, high=high, vol=vol)
     input_data.dropna(inplace=True)
     return input_data
+
 
 def get_sp500_tickers():
     resp = requests.get('http://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
@@ -262,6 +281,7 @@ def get_sp500_tickers():
         tickers.append(ticker.rstrip('\r\n'))
     return tickers
 
+
 def build_train_test_data(inputs, training_days):
     x_data, y_data = [], []
     for i in range(training_days, len(inputs)):
@@ -269,7 +289,8 @@ def build_train_test_data(inputs, training_days):
         y_data.append(inputs[i, 0:5])
     x_data, y_data = np.array(x_data), np.array(y_data)
     x_data = np.reshape(x_data, (x_data.shape[0], x_data.shape[1], inputs.shape[1]))
-    return (x_data, y_data)
+    return x_data, y_data
+
 
 def build_predict_data(inputs, training_days):
     x_data = []
@@ -278,23 +299,24 @@ def build_predict_data(inputs, training_days):
     x_data = np.reshape(x_data, (x_data.shape[0], x_data.shape[1], inputs.shape[1]))
     return x_data
 
+
 def build_model(x_train, y_train, verbose=False):
     """ create and fit the LSTM network """
-    uints = 200
+    units = 200
     model = Sequential()
-    model.add(CuDNNLSTM(units=uints,
-                    return_sequences=True,
-                    input_shape=(x_train.shape[1], x_train.shape[2])))
+    model.add(CuDNNLSTM(units=units,
+                        return_sequences=True,
+                        input_shape=(x_train.shape[1], x_train.shape[2])))
 
-    model.add(CuDNNLSTM(units=uints))
+    model.add(CuDNNLSTM(units=units))
     model.add(Dense(y_train.shape[1]))
-
 
     model.compile(loss='mean_squared_error', optimizer='adam')
     if verbose:
         model.summary()
 
     return model
+
 
 def train_predict(ticker,
                   input_data,
@@ -312,35 +334,35 @@ def train_predict(ticker,
     Predict tomorrow trend
     """
     start = dt.datetime.now()
-    #display(input_data)
     input_values = input_data.values.reshape(-1, input_data.shape[1])
-    input_scaler = MinMaxScaler(feature_range=(0, 1))
-    scaled_data = input_scaler.fit_transform(input_values)
+    input_scalar = MinMaxScaler(feature_range=(0, 1))
+    scaled_data = input_scalar.fit_transform(input_values)
 
     train_size = len(input_data) - test_days
 
-    #converting dataset into x_train and y_train
+    # converting dataset into x_train and y_train
     x_train, y_train = build_train_test_data(scaled_data[:train_size], training_days)
-    X_test, _ = build_train_test_data(scaled_data[train_size - training_days:], training_days)
-    X_predict = build_predict_data(scaled_data, training_days)
+    x_test, _ = build_train_test_data(scaled_data[train_size - training_days:], training_days)
+    x_predict = build_predict_data(scaled_data, training_days)
 
     # build model with train data
     model = build_model(x_train, y_train)
     model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, verbose=verbose)
-    result_data = model.predict(X_test)
-    result_pred = model.predict(X_predict)
+    result_data = model.predict(x_test)
+    result_predict = model.predict(x_predict)
 
     np.savetxt(data_folder + "/" + ticker + "_input.out", scaled_data, delimiter=",")
     np.savetxt(data_folder + "/" + ticker + "_result.out", result_data, delimiter=",")
-    np.savetxt(data_folder + "/" + ticker + "_predict.out", result_pred, delimiter=",")
+    np.savetxt(data_folder + "/" + ticker + "_predict.out", result_predict, delimiter=",")
 
     end = dt.datetime.now()
     print("\ttrain predict   exec time:{0:6.3f}".format((end - start).total_seconds()))
 
     return
 
+
 def main(start, end):
-    print ("Start [{0:3d}] -> End [{1:3d}]".format(start, end))
+    print("Start [{0:3d}] -> End [{1:3d}]".format(start, end))
     data_folder = '/content/drive/My Drive/FintechData/results/'
     maybe_make_dir(data_folder)
 
@@ -356,25 +378,32 @@ def main(start, end):
 
     for i, ticker in enumerate(tickers):
         start = dt.datetime.now()
-        print ("[{0:3d}]:{1}".format(i, ticker))
+        print("[{0:3d}]:{1}".format(i, ticker))
 
         data = quandl.get_table('WIKI/PRICES',
-                                qopts = { 'columns': ['ticker', 'date', 'adj_open', 'adj_high', 'adj_low', 'adj_close', 'adj_volume'] },
-                                ticker = ticker,
-                                date = { 'gte': str(start_date), 'lte': str(end_date) },
+                                qopts={'columns': ['ticker',
+                                                   'date',
+                                                   'adj_open',
+                                                   'adj_high',
+                                                   'adj_low',
+                                                   'adj_close',
+                                                   'adj_volume']},
+                                ticker=ticker,
+                                date={'gte': str(start_date), 'lte': str(end_date)},
                                 api_key='iaSAm2syxYNWCMMENDkJ')
-        data.rename(columns={'adj_open':'open',
-                            'adj_high':'high',
-                            'adj_low':'low',
-                            'adj_close':'close',
-                            'adj_volume':'volume'},
+        data.rename(columns={'adj_open': 'open',
+                             'adj_high': 'high',
+                             'adj_low': 'low',
+                             'adj_close': 'close',
+                             'adj_volume': 'volume'},
                     inplace=True)
         data = data.iloc[::-1]
         if len(data) > 3000:
-            data = add_techincal_indicators(data)
+            data = add_technical_indicators(data)
             end = dt.datetime.now()
             print("\tdata extraction exec time:{0:6.3f}".format((end - start).total_seconds()))
             train_predict(ticker, data.drop(columns=['ticker', 'date']), data_folder, epochs=50)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
