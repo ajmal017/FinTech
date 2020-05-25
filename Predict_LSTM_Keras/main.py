@@ -384,4 +384,5 @@ if __name__ == '__main__':
                         help='last index of tickers in S&P List')
 
     args = parser.parse_args()
+    warnings.filterwarnings('ignore')
     main(args.start, args.end)
