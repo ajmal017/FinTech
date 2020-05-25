@@ -1,4 +1,5 @@
 
+import argparse
 import requests
 import quandl
 import warnings
@@ -297,6 +298,7 @@ def build_model(x_train, y_train, verbose=False):
 
 def train_predict(ticker,
                   input_data,
+                  data_folder,
                   training_days=60,
                   test_days=252,
                   epochs=50,
@@ -338,6 +340,7 @@ def train_predict(ticker,
     return
 
 def main(start, end):
+    print ("Start [{0.3d}] -> End [{1:3d}]".format(start, end))
     data_folder = '/content/drive/My Drive/FintechData/results/'
     maybe_make_dir(data_folder)
 
@@ -374,4 +377,11 @@ def main(start, end):
             train_predict(ticker, data.drop(columns=['ticker', 'date']), data_folder, epochs=50)
 
 if __name__ == '__main__':
-    main(400, 450)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--start', type=int, default=0,
+                        help='start index of tickers in S&P List')
+    parser.add_argument('-e', '--end', type=int, default=50,
+                        help='last index of tickers in S&P List')
+
+    args = parser.parse_args()
+    main(args.start, args.end)

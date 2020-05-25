@@ -1,5 +1,6 @@
 import talib
 import numpy as np
+import pandas as pd
 import datetime as dt
 import pandas_datareader.data as pdr
 
@@ -9,10 +10,20 @@ def get_data(ticker='AAPL', span=15, test_size_percentage=20):
     start_date = end_date - dt.timedelta(365 * span)
     data = pdr.get_data_yahoo(ticker, start_date, end_date)
     test_size = int(test_size_percentage/100 * data.shape[0])
-    train_size = data.shape[0] - test_size
+    train_size = data.shape[0] - 252
     data.columns = map(str.lower, data.columns)
     return data[:train_size], data[train_size:]
 
+def get_data_from_file(ticker='AAPL', interval='5min'):
+    data = pd.read_csv("~/FintechData/" + ticker + "_" + interval + ".txt", date_parser=True)
+    data.columns = ['date', 'time', 'open', 'high', 'low', 'close', 'volume']
+    data['date'] = pd.to_datetime(data['date'], infer_datetime_format=True)
+    train_data = data[data['date'] < '2019-01-01'][::6]
+    end_date = dt.date(2020, 1, 1)
+    start_date = dt.date(2019, 1, 1)
+    test_data = pdr.get_data_yahoo(ticker, start_date, end_date)
+    test_data.columns = map(str.lower, test_data.columns)
+    return train_data, test_data
 
 class FeatureExtractor:
     def __init__(self, df):

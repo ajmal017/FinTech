@@ -180,7 +180,7 @@ class OhlcvEnv(gym.Env):
             if not self.train:
                 np.array([info]).dump(
                     './info/ppo_{0}_LS_{1}_{2}.info'.format(self.portfolio, self.n_long, self.n_short))
-        if self.done:
+        if self.done and not self.train:
             print("Finish at {0} portfolio:{1:6.3f}".format(self.current_tick, self.portfolio))
 
         return self.state, self.reward, self.done, info

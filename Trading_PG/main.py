@@ -25,7 +25,7 @@ def launch_model():
     # End date.
     end = "2018-01-01"
     # Episodes.
-    episode = 100
+    episode = 1000
     # Training data ratio.
     training_data_ratio = 0.8
 
@@ -68,10 +68,10 @@ def launch_model():
             "summary_path": os.path.join(CHECKPOINTS_DIR, "RL", model_name, market, "summary"),
         })
 
-
     algorithm.run()
     algorithm.eval()
     algorithm.plot()
+
 
 if __name__ == '__main__':
     launch_model()

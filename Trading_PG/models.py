@@ -148,8 +148,9 @@ class BaseRLTFModel(BaseTFModel):
         self.mode = 'test'
         s = self.env.reset('eval')
         while True:
-            c, a, _ = self.predict(s)
-            s_next, _, status, _ = self.env.forward(c, a)
+            cas, a_index = self.predict(s)
+            for ca in cas:
+                s_next, r, status, _ = self.env.forward(ca[0], ca[1])
             s = s_next
             if status == self.env.Done:
                 self.env.trader.log_asset(0)
@@ -185,15 +186,25 @@ class BaseRLTFModel(BaseTFModel):
         a = np.where(a > 1 / 3, 2, np.where(a < - 1 / 3, 1, 0)).astype(np.int32)[0].tolist()
         return a
 
-    def _get_stock_code_and_action(self, a):
-        action_index = np.argmax(a)
-        action = action_index
-        actions = []
+    def _get_stock_code_and_action(self, a, use_greedy=False, use_prob=False):
+        stocks_actions = []
+        # Reshape a.
+        a = a.reshape((-1,))
+        # Generate indices.
+        a_indices = np.arange(a.shape[0])
+        # Get action index.
+        action_index = np.random.choice(a_indices, p=a)
+        _action_index = action_index
+
         for code in range(len(self.env.codes)):
-            actions.append((self.env.codes[code], np.floor(action % 3).astype(int)))
-            action /= 3
-        #print (actions, action_index)
-        return actions, action_index
+            # Get action
+            action = np.floor(_action_index % 3).astype(int)
+            # Get stock index
+            _action_index = _action_index / 3
+            # Get stock code.
+            stock_code = self.env.codes[code]
+            stocks_actions.append((stock_code, action))
+        return stocks_actions, action_index
     
     def get_stock_code_and_action(self, a, use_greedy=False, use_prob=False):
         # Reshape a.
@@ -226,4 +237,4 @@ class BaseRLTFModel(BaseTFModel):
         # Get stock code.
         stock_code = self.env.codes[stock_index]
 
-        return stock_code, action, action_index
+        return [(stock_code, action)], action_index
