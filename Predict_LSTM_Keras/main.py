@@ -286,7 +286,7 @@ def build_train_test_data(inputs, training_days):
     x_data, y_data = [], []
     for i in range(training_days, len(inputs)-1):
         x_data.append(inputs[i - training_days:i, :])
-        y_data.append(inputs[i:i+1, 0:5])
+        y_data.append(np.concatenate((inputs[i, 0:5], inputs[i+1, 0:5])))
     x_data, y_data = np.array(x_data), np.array(y_data)
     x_data = np.reshape(x_data, (x_data.shape[0], x_data.shape[1], inputs.shape[1]))
     return x_data, y_data
@@ -375,7 +375,6 @@ def main(start, end):
 
     for i, ticker in enumerate(tickers):
         start = dt.datetime.now()
-        print("[{0:3d}]:{1}".format(i, ticker.rjust(5, " ")))
 
         try:
             data = pdr.get_data_yahoo(ticker, start_date, end_date)
@@ -389,8 +388,11 @@ def main(start, end):
                 data = add_technical_indicators(data)
                 train_predict(ticker, data, data_folder, epochs=50)
                 end = dt.datetime.now()
-                print("\texec time:{0:6.3f}".format((end - start).total_seconds()))
+                print("[{0:3d}]:{1}\texec time:{1:6.3f}".format(i, ticker.rjust(5, " "), (end - start).total_seconds()))
+            else:
+                print("[{0:3d}]:{1}".format(i, ticker.rjust(5, " ")))
         except:
+            print("Error: [{0:3d}]:{1}".format(i, ticker.rjust(5, " ")))
             pass
 
 
