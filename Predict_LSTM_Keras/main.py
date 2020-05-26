@@ -388,7 +388,7 @@ def main(start, end):
                 data = add_technical_indicators(data)
                 train_predict(ticker, data, data_folder, epochs=50)
                 end = dt.datetime.now()
-                print("[{0:3d}]:{1}\texec time:{1:6.3f}".format(i, ticker.rjust(5, " "), (end - start).total_seconds()))
+                print("[{0:3d}]:{1}\texec time:{2:6.3f}".format(i, ticker.rjust(5, " "), (end - start).total_seconds()))
             else:
                 print("[{0:3d}]:{1}".format(i, ticker.rjust(5, " ")))
         except:
