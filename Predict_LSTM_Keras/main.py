@@ -391,7 +391,7 @@ def main(start, end):
             data = add_technical_indicators(data)
             end = dt.datetime.now()
             print("\tdata extraction exec time:{0:6.3f}".format((end - start).total_seconds()))
-            train_predict(ticker, data.drop(columns=['ticker', 'date']), data_folder, epochs=50)
+            train_predict(ticker, data, data_folder, epochs=50)
 
 
 if __name__ == '__main__':
