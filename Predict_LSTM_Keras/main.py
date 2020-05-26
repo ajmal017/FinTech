@@ -1,12 +1,12 @@
 
 import argparse
 import requests
-import quandl
 import warnings
 import os
 
 import bs4 as bs
 import datetime as dt
+import pandas_datareader.data as pdr
 
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
@@ -340,7 +340,7 @@ def train_predict(ticker,
 
     train_size = len(input_data) - test_days
 
-    # converting dataset into x_train and y_train
+    # converting data set into x_train and y_train
     x_train, y_train = build_train_test_data(scaled_data[:train_size], training_days)
     x_test, _ = build_train_test_data(scaled_data[train_size - training_days:], training_days)
     x_predict = build_predict_data(scaled_data, training_days)
@@ -380,24 +380,13 @@ def main(start, end):
         start = dt.datetime.now()
         print("[{0:3d}]:{1}".format(i, ticker))
 
-        data = quandl.get_table('WIKI/PRICES',
-                                qopts={'columns': ['ticker',
-                                                   'date',
-                                                   'adj_open',
-                                                   'adj_high',
-                                                   'adj_low',
-                                                   'adj_close',
-                                                   'adj_volume']},
-                                ticker=ticker,
-                                date={'gte': str(start_date), 'lte': str(end_date)},
-                                api_key='iaSAm2syxYNWCMMENDkJ')
-        data.rename(columns={'adj_open': 'open',
-                             'adj_high': 'high',
-                             'adj_low': 'low',
-                             'adj_close': 'close',
-                             'adj_volume': 'volume'},
+        data = pdr.get_data_yahoo(ticker, start_date, end_date)
+        data.rename(columns={'Open': 'open',
+                             'High': 'high',
+                             'Low': 'low',
+                             'Close': 'close',
+                             'Volume': 'volume'},
                     inplace=True)
-        data = data.iloc[::-1]
         if len(data) > 3000:
             data = add_technical_indicators(data)
             end = dt.datetime.now()
