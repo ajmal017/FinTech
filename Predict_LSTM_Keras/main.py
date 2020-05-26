@@ -374,7 +374,7 @@ def main(start, end):
     start_date = end_date - dt.timedelta(365 * 20)
 
     for i, ticker in enumerate(tickers):
-        start = dt.datetime.now()
+        start_time = dt.datetime.now()
 
         try:
             data = pdr.get_data_yahoo(ticker, start_date, end_date)
@@ -387,8 +387,9 @@ def main(start, end):
             if len(data) > 3000:
                 data = add_technical_indicators(data)
                 train_predict(ticker, data, data_folder, epochs=50)
-                end = dt.datetime.now()
-                print("[{0:3d}]:{1}\texec time:{2:6.3f}".format(i + start, ticker.rjust(5, " "), (end - start).total_seconds()))
+                end_time = dt.datetime.now()
+                print("[{0:3d}]:{1}\texec time:{2:6.3f}".
+                      format(i + start, ticker.rjust(5, " "), (end_time - start_time).total_seconds()))
             else:
                 print("[{0:3d}]:{1}".format(i, ticker.rjust(5, " ")))
         except:
