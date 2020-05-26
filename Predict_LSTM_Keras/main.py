@@ -173,7 +173,7 @@ def calc_cci(close, low, high, interval=20):
 
 def calc_dpo(close, interval=20):
     """
-    Detrended Price Oscillator (DPO)
+    Defended Price Oscillator (DPO)
     Is an indicator designed to remove trend from price and make it easier to
     identify cycles.
     http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:detrended_price_osci
@@ -284,9 +284,9 @@ def get_sp500_tickers():
 
 def build_train_test_data(inputs, training_days):
     x_data, y_data = [], []
-    for i in range(training_days, len(inputs)):
+    for i in range(training_days, len(inputs)-1):
         x_data.append(inputs[i - training_days:i, :])
-        y_data.append(inputs[i, 0:5])
+        y_data.append(inputs[i:i+1, 0:5])
     x_data, y_data = np.array(x_data), np.array(y_data)
     x_data = np.reshape(x_data, (x_data.shape[0], x_data.shape[1], inputs.shape[1]))
     return x_data, y_data
@@ -333,7 +333,6 @@ def train_predict(ticker,
     Calculate the accuracy
     Predict tomorrow trend
     """
-    start = dt.datetime.now()
     input_values = input_data.values.reshape(-1, input_data.shape[1])
     input_scalar = MinMaxScaler(feature_range=(0, 1))
     scaled_data = input_scalar.fit_transform(input_values)
@@ -351,12 +350,10 @@ def train_predict(ticker,
     result_data = model.predict(x_test)
     result_predict = model.predict(x_predict)
 
+    np.savetxt(data_folder + "/" + ticker + "_market.out", input_values[-test_days*2:], delimiter=",")
     np.savetxt(data_folder + "/" + ticker + "_input.out", scaled_data[-test_days*2:], delimiter=",")
     np.savetxt(data_folder + "/" + ticker + "_result.out", result_data, delimiter=",")
     np.savetxt(data_folder + "/" + ticker + "_predict.out", result_predict, delimiter=",")
-
-    end = dt.datetime.now()
-    print("\ttrain predict   exec time:{0:6.3f}".format((end - start).total_seconds()))
 
     return
 
@@ -378,7 +375,7 @@ def main(start, end):
 
     for i, ticker in enumerate(tickers):
         start = dt.datetime.now()
-        print("[{0:3d}]:{1}".format(i, ticker))
+        print("[{0:3d}]:{1}".format(i, ticker.rjust(5, " ")))
 
         try:
             data = pdr.get_data_yahoo(ticker, start_date, end_date)
@@ -390,9 +387,9 @@ def main(start, end):
                         inplace=True)
             if len(data) > 3000:
                 data = add_technical_indicators(data)
-                end = dt.datetime.now()
-                print("\tdata extraction exec time:{0:6.3f}".format((end - start).total_seconds()))
                 train_predict(ticker, data, data_folder, epochs=50)
+                end = dt.datetime.now()
+                print("\texec time:{0:6.3f}".format((end - start).total_seconds()))
         except:
             pass
 
