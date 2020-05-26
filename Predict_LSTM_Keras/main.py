@@ -380,18 +380,21 @@ def main(start, end):
         start = dt.datetime.now()
         print("[{0:3d}]:{1}".format(i, ticker))
 
-        data = pdr.get_data_yahoo(ticker, start_date, end_date)
-        data.rename(columns={'Open': 'open',
-                             'High': 'high',
-                             'Low': 'low',
-                             'Close': 'close',
-                             'Volume': 'volume'},
-                    inplace=True)
-        if len(data) > 3000:
-            data = add_technical_indicators(data)
-            end = dt.datetime.now()
-            print("\tdata extraction exec time:{0:6.3f}".format((end - start).total_seconds()))
-            train_predict(ticker, data, data_folder, epochs=50)
+        try:
+            data = pdr.get_data_yahoo(ticker, start_date, end_date)
+            data.rename(columns={'Open': 'open',
+                                 'High': 'high',
+                                 'Low': 'low',
+                                 'Close': 'close',
+                                 'Volume': 'volume'},
+                        inplace=True)
+            if len(data) > 3000:
+                data = add_technical_indicators(data)
+                end = dt.datetime.now()
+                print("\tdata extraction exec time:{0:6.3f}".format((end - start).total_seconds()))
+                train_predict(ticker, data, data_folder, epochs=50)
+        except:
+            pass
 
 
 if __name__ == '__main__':
