@@ -391,9 +391,9 @@ def main(start, end):
                 print("[{0:3d}]:{1}\texec time:{2:6.3f}".
                       format(i + start, ticker.rjust(5, " "), (end_time - start_time).total_seconds()))
             else:
-                print("[{0:3d}]:{1}".format(i, ticker.rjust(5, " ")))
+                print("[{0:3d}]:{1}".format(i + start, ticker.rjust(5, " ")))
         except:
-            print("Error: [{0:3d}]:{1}".format(i, ticker.rjust(5, " ")))
+            print("Error: [{0:3d}]:{1}".format(i + start, ticker.rjust(5, " ")))
             pass
 
 
