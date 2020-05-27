@@ -334,8 +334,14 @@ def train_predict(ticker,
     Predict tomorrow trend
     """
     input_values = input_data.values.reshape(-1, input_data.shape[1])
+    price_values = input_values[:, :5]
+    price_scalar = MinMaxScaler(feature_range=(0, 1))
+    scaled_price = price_scalar.fit_transform(price_values.reshape(price_values.shape[0] * price_values.shape[1], 1))
+    scaled_price = np.reshape(scaled_price, (-1, price_values.shape[1]))
+
     input_scalar = MinMaxScaler(feature_range=(0, 1))
-    scaled_data = input_scalar.fit_transform(input_values)
+    scaled_data = input_scalar.fit_transform(input_values[:, 5:])
+    scaled_data = np.concatenate((scaled_price, scaled_data), axis=1)
 
     train_size = len(input_data) - test_days
 
@@ -384,6 +390,7 @@ def main(start, end):
                                  'Close': 'close',
                                  'Volume': 'volume'},
                         inplace=True)
+            data.drop(columns=['Adj Close'], inplace=True)
             if len(data) > 3000:
                 data = add_technical_indicators(data)
                 train_predict(ticker, data, data_folder, epochs=50)
