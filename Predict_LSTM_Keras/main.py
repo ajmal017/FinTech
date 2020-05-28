@@ -395,10 +395,9 @@ def train(start, end):
                              'Volume': 'volume'},
                     inplace=True)
         data.drop(columns=['Adj Close'], inplace=True)
-        print(data.columns)
         if len(data) > 3000:
             data = add_technical_indicators(data)
-            train_predict(ticker, data, data_folder, epochs=50, verbose=2)
+            train_predict(ticker, data, data_folder, epochs=50, verbose=0)
             end_time = dt.datetime.now()
             print("[{0:3d}]:{1}\texec time:{2:6.3f}".
                   format(i + start, ticker.rjust(5, " "), (end_time - start_time).total_seconds()))
