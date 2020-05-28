@@ -10,12 +10,13 @@ import pandas_datareader.data as pdr
 
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
-from keras.layers import Dense, CuDNNLSTM
+from keras.layers import Dense, CuDNNLSTM, LSTM
 from ta.momentum import *
 from ta.trend import *
 from ta.volume import *
 from ta.volatility import *
 
+# from analysis import build_ticker_result
 
 def maybe_make_dir(directory):
     if not os.path.exists(directory):
@@ -333,18 +334,21 @@ def train_predict(ticker,
     Calculate the accuracy
     Predict tomorrow trend
     """
-    normalized_data = input_data / input_data.loc[0]
-    scaled_data = normalized_data.values.reshape(-1, input_data.shape[1])
+    price_columns = ['high', 'low', 'open', 'close']
+    input_df = input_data.reset_index(drop=True)
+    input_values = input_df.values.reshape(-1, input_df.shape[1])
 
-    # input_values = normalized_data.values.reshape(-1, input_data.shape[1])
-    # price_values = input_values[:, :5]
-    # price_scalar = MinMaxScaler(feature_range=(0, 1))
-    # scaled_price = price_scalar.fit_transform(price_values.reshape(price_values.shape[0] * price_values.shape[1], 1))
-    # scaled_price = np.reshape(scaled_price, (-1, price_values.shape[1]))
+    price_data = input_data[price_columns]
+    min_price_value = np.min(price_data.min().values)
+    max_price_value = np.max(price_data.max().values)
+    price_data = (price_data - min_price_value) / (max_price_value - min_price_value)
+    scaled_price = price_data.values.reshape(-1, len(price_columns))
 
-    # input_scalar = MinMaxScaler(feature_range=(0, 1))
-    # scaled_data = input_scalar.fit_transform(input_values[:, 5:])
-    # scaled_data = np.concatenate((scaled_price, scaled_data), axis=1)
+    indicator_data = input_df.drop(columns=price_columns)
+    indicator_values = indicator_data.values.reshape(-1, indicator_data.shape[1])
+    input_scalar = MinMaxScaler(feature_range=(0, 1))
+    scaled_indicator = input_scalar.fit_transform(indicator_values)
+    scaled_data = np.concatenate((scaled_price, scaled_indicator), axis=1)
 
     train_size = len(input_data) - test_days
 
@@ -367,16 +371,13 @@ def train_predict(ticker,
     return
 
 
-def main(start, end):
+def train(start, end):
     print("Start [{0:3d}] -> End [{1:3d}]".format(start, end))
-    data_folder = '/content/drive/My Drive/FintechData/results/'
+    data_folder = 'results/'
     maybe_make_dir(data_folder)
 
     end_date = dt.date.today()
     data_folder += str(end_date)
-    maybe_make_dir(data_folder)
-
-    data_folder += "/" + str(start) + "-" + str(end)
     maybe_make_dir(data_folder)
 
     tickers = get_sp500_tickers()[start:end]
@@ -385,26 +386,27 @@ def main(start, end):
     for i, ticker in enumerate(tickers):
         start_time = dt.datetime.now()
 
-        try:
-            data = pdr.get_data_yahoo(ticker, start_date, end_date)
-            data.rename(columns={'Open': 'open',
-                                 'High': 'high',
-                                 'Low': 'low',
-                                 'Close': 'close',
-                                 'Volume': 'volume'},
-                        inplace=True)
-            data.drop(columns=['Adj Close'], inplace=True)
-            if len(data) > 3000:
-                data = add_technical_indicators(data)
-                train_predict(ticker, data, data_folder, epochs=50)
-                end_time = dt.datetime.now()
-                print("[{0:3d}]:{1}\texec time:{2:6.3f}".
-                      format(i + start, ticker.rjust(5, " "), (end_time - start_time).total_seconds()))
-            else:
-                print("[{0:3d}]:{1}".format(i + start, ticker.rjust(5, " ")))
-        except:
-            print("Error: [{0:3d}]:{1}".format(i + start, ticker.rjust(5, " ")))
-            pass
+        #try:
+        data = pdr.get_data_yahoo(ticker, start_date, end_date)
+        data.rename(columns={'Open': 'open',
+                             'High': 'high',
+                             'Low': 'low',
+                             'Close': 'close',
+                             'Volume': 'volume'},
+                    inplace=True)
+        data.drop(columns=['Adj Close'], inplace=True)
+        print(data.columns)
+        if len(data) > 3000:
+            data = add_technical_indicators(data)
+            train_predict(ticker, data, data_folder, epochs=50, verbose=2)
+            end_time = dt.datetime.now()
+            print("[{0:3d}]:{1}\texec time:{2:6.3f}".
+                  format(i + start, ticker.rjust(5, " "), (end_time - start_time).total_seconds()))
+        else:
+            print("[{0:3d}]:{1}".format(i + start, ticker.rjust(5, " ")))
+        #except:
+        #    print("Error: [{0:3d}]:{1}".format(i + start, ticker.rjust(5, " ")))
+        #    pass
 
 
 if __name__ == '__main__':
@@ -413,7 +415,14 @@ if __name__ == '__main__':
                         help='start index of tickers in S&P List')
     parser.add_argument('-e', '--end', type=int, default=50,
                         help='last index of tickers in S&P List')
+    parser.add_argument('-m', '--mode', type=str, default='a',
+                        help='Execution mode, t as train, a as analysis')
+    parser.add_argument('-t', '--ticker', type=str, default='MMM',
+                        help='Ticker which is analysed')
 
     args = parser.parse_args()
     warnings.filterwarnings('ignore')
-    main(args.start, args.end)
+    # if args.mode == 'a':
+    #    build_ticker_result(args.ticker, 'results/2020-05-28/')
+    #else:
+    train(args.start, args.end)
