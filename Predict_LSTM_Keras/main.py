@@ -285,9 +285,9 @@ def get_sp500_tickers():
 
 def build_train_test_data(inputs, training_days):
     x_data, y_data = [], []
-    for i in range(training_days, len(inputs)-1):
+    for i in range(training_days, len(inputs)):
         x_data.append(inputs[i - training_days:i, :])
-        y_data.append(np.concatenate((inputs[i, 0:5], inputs[i+1, 0:5])))
+        y_data.append(np.concatenate((inputs[i, 0:5])))
     x_data, y_data = np.array(x_data), np.array(y_data)
     x_data = np.reshape(x_data, (x_data.shape[0], x_data.shape[1], inputs.shape[1]))
     return x_data, y_data
