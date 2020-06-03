@@ -386,26 +386,26 @@ def train(start, end):
     for i, ticker in enumerate(tickers):
         start_time = dt.datetime.now()
 
-        #try:
-        data = pdr.get_data_yahoo(ticker, start_date, end_date)
-        data.rename(columns={'Open': 'open',
-                             'High': 'high',
-                             'Low': 'low',
-                             'Close': 'close',
-                             'Volume': 'volume'},
-                    inplace=True)
-        data.drop(columns=['Adj Close'], inplace=True)
-        if len(data) > 3000:
-            data = add_technical_indicators(data)
-            train_predict(ticker, data, data_folder, epochs=50, verbose=0)
-            end_time = dt.datetime.now()
-            print("[{0:3d}]:{1}\texec time:{2:6.3f}".
-                  format(i + start, ticker.rjust(5, " "), (end_time - start_time).total_seconds()))
-        else:
-            print("[{0:3d}]:{1}".format(i + start, ticker.rjust(5, " ")))
-        #except:
-        #    print("Error: [{0:3d}]:{1}".format(i + start, ticker.rjust(5, " ")))
-        #    pass
+        try:
+            data = pdr.get_data_yahoo(ticker, start_date, end_date)
+            data.rename(columns={'Open': 'open',
+                                 'High': 'high',
+                                 'Low': 'low',
+                                 'Close': 'close',
+                                 'Volume': 'volume'},
+                        inplace=True)
+            data.drop(columns=['Adj Close'], inplace=True)
+            if len(data) > 3000:
+                data = add_technical_indicators(data)
+                train_predict(ticker, data, data_folder, epochs=50, verbose=0)
+                end_time = dt.datetime.now()
+                print("[{0:3d}]:{1}\texec time:{2:6.3f}".
+                      format(i + start, ticker.rjust(5, " "), (end_time - start_time).total_seconds()))
+            else:
+                print("[{0:3d}]:{1}".format(i + start, ticker.rjust(5, " ")))
+        except:
+            print("Error: [{0:3d}]:{1}".format(i + start, ticker.rjust(5, " ")))
+            pass
 
 
 if __name__ == '__main__':
