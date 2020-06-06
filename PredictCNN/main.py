@@ -32,10 +32,10 @@ if __name__ == '__main__':
                         help='start index of tickers in S&P List')
     parser.add_argument('-e', '--end', type=int, default=50,
                         help='last index of tickers in S&P List')
-    parser.add_argument('-m', '--mode', type=str, default='a',
-                        help='Execution mode, t as train, a as analysis')
-    parser.add_argument('-t', '--ticker', type=str, default='MMM',
-                        help='Ticker which is analysed')
+    parser.add_argument('-m', '--mode', type=str, default='te',
+                        help='Execution mode, t as train, e as evaluation, te as train and evaluation, d for data')
+    parser.add_argument('-p', '--plot', type=bool, default=False,
+                        help='display algorithm output')
 
     args = parser.parse_args()
     warnings.filterwarnings('ignore')
@@ -49,10 +49,15 @@ if __name__ == '__main__':
     labels = create_labels(data)
     data['labels'] = labels
     data.dropna(inplace=True)
-    # show_data(data[-300:)
 
-    feature_idx, start_col, end_col = select_features(data)
-    model, params, mcp, rlp, es = create_model_cnn()
-    x_test, y_test, x_cv, y_cv, x_train, y_train, sample_weights = prepare_data(data, start_col, end_col, feature_idx)
-    train(model, x_train, y_train, params, x_cv, y_cv, mcp, rlp, es, sample_weights)
-    evaluate(x_test, y_test)
+    if args.plot:
+        show_data(data[-300:])
+
+    if args.mode != 'n':
+        feature_idx, start_col, end_col = select_features(data)
+        model, params, mcp, rlp, es = create_model_cnn()
+        x_test, y_test, x_cv, y_cv, x_train, y_train, sample_weights = prepare_data(data, start_col, end_col, feature_idx)
+        if args.mode == 't' or args.mode == 'te':
+            train(model, x_train, y_train, params, x_cv, y_cv, mcp, rlp, es, sample_weights)
+        if args.mode == 'e' or args.mode == 'te':
+            evaluate(x_test, y_test)
