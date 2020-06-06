@@ -3,7 +3,7 @@ import tensorflow as tf
 from keras import backend as K
 from keras.utils import get_custom_objects
 from keras.models import Sequential
-from keras.layers import Dense, CuDNNLSTM, LSTM, Conv2D, MaxPool2D, Dropout, Flatten
+from keras.layers import Dense, MaxPool2D, Dropout, Flatten
 from keras import optimizers
 from keras import regularizers
 from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, CSVLogger, Callback
