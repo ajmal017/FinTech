@@ -15,8 +15,9 @@ from ta.momentum import *
 from ta.trend import *
 from ta.volume import *
 from ta.volatility import *
+from tqdm import tqdm
+#from analysis import build_ticker_result
 
-# from analysis import build_ticker_result
 
 def maybe_make_dir(directory):
     if not os.path.exists(directory):
@@ -241,7 +242,7 @@ def calc_eom(low, high, vol, interval=14):
     return evm.rolling(interval).mean()
 
 
-def add_technical_indicators(input_data):
+def add_technical_indicators(input_data, intervals):
 
     close = input_data['close']
     high = input_data['high']
@@ -249,25 +250,26 @@ def add_technical_indicators(input_data):
     vol = input_data['volume']
 
     input_data['macd'], input_data['signal'] = calc_macd(close)
-    input_data['rsi'] = calc_rsi(close=close)
     input_data['ibr'] = calc_ibr(close=close, low=low, high=high)
-    input_data['willamr'] = calc_william_r(close=close, low=low, high=high)
-    input_data['mfi'] = calc_mfi(close=close, low=low, high=high, vol=vol)
-    input_data['roc_12'] = calc_roc(close=close, interval=12)
-    input_data['roc_25'] = calc_roc(close=close, interval=25)
-    input_data['cmf'] = calc_cmf(close=close, low=low, high=high, vol=vol)
-    input_data['cmo'] = calc_cmo(close=close)
-    input_data['sma'] = calc_sma(close=close)
-    input_data['ema'] = calc_ema(close=close)
-    input_data['wma'] = calc_wma(close=close)
-    input_data['trix'] = calc_trix(close=close)
-    input_data['cci'] = calc_cci(close=close, low=low, high=high)
-    input_data['dpo'] = calc_dpo(close=close)
-    input_data['kst'] = calc_kst(close=close)
-    input_data['dmi'] = calc_dmi(close=close, low=low, high=high)
     input_data['bb'] = calc_bb_mav(close=close)
-    input_data['fi'] = calc_fi(close=close, vol=vol)
-    input_data['eom'] = calc_eom(low=low, high=high, vol=vol)
+    for i in tqdm(intervals):
+        idx = str(i)
+        input_data['rsi_' + idx] = calc_rsi(close=close, interval=i)
+        input_data['willamr_' + idx] = calc_william_r(close=close, low=low, high=high, interval=i)
+        input_data['mfi_' + idx] = calc_mfi(close=close, low=low, high=high, vol=vol, interval=i)
+        input_data['roc_' + idx] = calc_roc(close=close, interval=i)
+        input_data['cmf_' + idx] = calc_cmf(close=close, low=low, high=high, vol=vol, interval=i)
+        input_data['cmo_' + idx] = calc_cmo(close=close, interval=i)
+        input_data['sma_' + idx] = calc_sma(close=close, interval=i)
+        input_data['ema_' + idx] = calc_ema(close=close, interval=i)
+        input_data['wma_' + idx] = calc_wma(close=close, interval=i)
+        input_data['trix_' + idx] = calc_trix(close=close, interval=i)
+        input_data['cci_' + idx] = calc_cci(close=close, low=low, high=high, interval=i)
+        input_data['dpo_' + idx] = calc_dpo(close=close, interval=i)
+        input_data['kst_' + idx] = calc_kst(close=close, interval=i)
+        input_data['dmi_' + idx] = calc_dmi(close=close, low=low, high=high, interval=i)
+        input_data['fi_' + idx] = calc_fi(close=close, vol=vol, interval=i)
+        input_data['eom_' + idx] = calc_eom(low=low, high=high, vol=vol, interval=i)
     input_data.dropna(inplace=True)
     return input_data
 
@@ -382,6 +384,7 @@ def train(start, end):
 
     tickers = get_sp500_tickers()[start:end]
     start_date = end_date - dt.timedelta(365 * 20)
+    intervals = range(6, 27)  # 21
 
     for i, ticker in enumerate(tickers):
         start_time = dt.datetime.now()
@@ -396,7 +399,7 @@ def train(start, end):
                         inplace=True)
             data.drop(columns=['Adj Close'], inplace=True)
             if len(data) > 3000:
-                data = add_technical_indicators(data)
+                data = add_technical_indicators(data, intervals)
                 train_predict(ticker, data, data_folder, epochs=50, verbose=0)
                 end_time = dt.datetime.now()
                 print("[{0:3d}]:{1}\texec time:{2:6.3f}".
