@@ -20,7 +20,6 @@ def read_data(ticker, total_dates, intervals, data_folder="data"):
     data_file = get_data_file(ticker, data_folder)
     if path.exists(data_file):
         data = pd.read_csv(data_file)
-        print(data)
     else:
         data = pdr.get_data_yahoo(ticker, dt.date.today() - dt.timedelta(total_dates), dt.date.today())
         calculate_technical_indicators(data, intervals)

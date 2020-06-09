@@ -102,5 +102,5 @@ def train(model, x_train, y_train, params, x_cv, y_cv, mcp, rlp, es, sample_weig
               shuffle=True,
               # validation_split=0.3,
               validation_data=(x_cv, y_cv),
-              callbacks=[mcp, rlp, es],
+              callbacks=[mcp, rlp],
               sample_weight=sample_weights)

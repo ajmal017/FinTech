@@ -172,7 +172,7 @@ def create_model_cnn():
                        mode='min',
                        verbose=1,
                        patience=100,
-                       min_delta=0.0001)
+                       min_delta=0.00001)
     rlp = ReduceLROnPlateau(monitor='val_loss',
                             factor=0.02,
                             patience=10,

@@ -23,38 +23,19 @@ def create_labels(data, window_size=11):
     labels = np.zeros(total_rows)
     labels[:] = np.nan
     print("Calculating labels")
-    pbar = tqdm(total_rows)
+    #pbar = tqdm(total_rows)
+    bought_prices = []
+    total_profit = 0
 
-    while row_counter < total_rows:
-        if row_counter >= window_size - 1:
-            window_begin = row_counter - (window_size - 1)
-            window_end = row_counter
-            window_middle = (window_begin + window_end) / 2
+    for row_counter in tqdm(range(total_rows - 1)):
+        chg = (data.iloc[row_counter + 1]['Close'] - data.iloc[row_counter]['Close']) / data.iloc[row_counter]['Close']
+        if chg > 0.02:
+            labels[row_counter] = buy
+        elif chg < -0.02:
+            labels[row_counter] = sell
+        else:
+            labels[row_counter] = hold
 
-            min_price = np.inf
-            min_index = -1
-            max_price = -np.inf
-            max_index = -1
-            for i in range(window_begin, window_end + 1):
-                price = data.iloc[i]['Close']
-                if price < min_price:
-                    min_price = price
-                    min_index = i
-                if price > max_price:
-                    max_price = price
-                    max_index = i
-
-                if max_index == window_middle:
-                    labels[row_counter] = sell
-                elif min_index == window_middle:
-                    labels[row_counter] = buy
-                else:
-                    labels[row_counter] = hold
-
-        row_counter = row_counter + 1
-        pbar.update(1)
-
-    pbar.close()
     return labels
 
 

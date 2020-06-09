@@ -12,18 +12,18 @@ from evaluate import evaluate
 
 def show_data(plt_data):
     fig, ax1 = plt.subplots()
-    plt.plot(plt_data['Adj Close'].index, plt_data['Adj Close'], 'b-', linewidth=2)
+    plt.plot(plt_data['Adj Close'].index, plt_data['Adj Close'], 'b-', linewidth=1)
 
     # Plot the buy signals
     ax1.plot(plt_data.loc[plt_data.labels == 1].index,
              plt_data['Adj Close'][plt_data.labels == 1],
-             '^', markersize=5, color='w')
+             '^', markersize=5, color='g')
 
     # Plot the sell signals
     ax1.plot(plt_data.loc[plt_data.labels == 0].index,
              plt_data['Adj Close'][plt_data.labels == 0],
              'v', markersize=5, color='r')
-    fig.autofmt_xdate()
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -50,8 +50,8 @@ if __name__ == '__main__':
     data['labels'] = labels
     data.dropna(inplace=True)
 
-    if args.plot:
-        show_data(data[-300:])
+    #if args.plot:
+    #    show_data(data[-300:])
 
     if args.mode != 'n':
         feature_idx, start_col, end_col = select_features(data)
