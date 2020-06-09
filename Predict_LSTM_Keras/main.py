@@ -243,7 +243,6 @@ def calc_eom(low, high, vol, interval=14):
 
 
 def add_technical_indicators(input_data, intervals):
-
     close = input_data['close']
     high = input_data['high']
     low = input_data['low']
